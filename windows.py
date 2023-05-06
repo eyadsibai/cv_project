@@ -1,19 +1,15 @@
 import numpy as np
 import cv2
 import pickle
-import time
 import os
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
-from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
-from skimage.feature import hog
 from scipy.ndimage.measurements import label
 from settings import *
 from features import *
 from train import *
-import cropper
 
 # Define a function that takes an image,
 # start and stop positions in both x and y,
@@ -22,13 +18,13 @@ import cropper
 def slide_window(img, x_start_stop=[None, None], y_start_stop=[None, None],
 					xy_window=(64, 64), xy_overlap=(0.5, 0.5)):
 	# If x and/or y start/stop positions not defined, set to image size
-	if x_start_stop[0] == None:
+	if x_start_stop[0] is None:
 		x_start_stop[0] = 0
-	if x_start_stop[1] == None:
+	if x_start_stop[1] is None:
 		x_start_stop[1] = img.shape[1]
-	if y_start_stop[0] == None:
+	if y_start_stop[0] is None:
 		y_start_stop[0] = 0
-	if y_start_stop[1] == None:
+	if y_start_stop[1] is None:
 		y_start_stop[1] = img.shape[0]
 	# Compute the span of the region to be searched
 	xspan = x_start_stop[1] - x_start_stop[0]

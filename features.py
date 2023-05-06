@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 from skimage.feature import hog
-import pickle
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 from settings import *
@@ -11,7 +10,7 @@ def get_hog_features(img, orient, pix_per_cell, cell_per_block, vis=False, featu
 	"""
 	Return HOG features and visualization (optionally)
 	"""
-	if vis == True:
+	if vis:
 		features, hog_image = hog(img, orientations=orient, pixels_per_cell=(pix_per_cell, pix_per_cell),
 			cells_per_block=(cell_per_block, cell_per_block), transform_sqrt=False,
 			visualise=True, feature_vector=False)
@@ -67,16 +66,17 @@ def extract_features(imgs, color_space='RGB', spatial_size=(32, 32),
 			elif color_space == 'GRAY':
 				feature_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 				feature_image = np.stack((feature_image, feature_image, feature_image), axis=2)  # keep shape
-		else: feature_image = np.copy(image)
+		else:
+			feature_image = np.copy(image)
 
-		if spatial_feat == True:
+		if spatial_feat is True:
 			spatial_features = bin_spatial(feature_image, size=spatial_size)
 			image_features.append(spatial_features)
-		if hist_feat == True:
+		if hist_feat is True:
 			# Apply color_hist()
 			hist_features = color_hist(feature_image, nbins=hist_bins)
 			image_features.append(hist_features)
-		if hog_feat == True:
+		if hog_feat is True:
 		# Call get_hog_features() with vis=False, feature_vec=True
 			if hog_channel == 'ALL':
 				hog_features = []
@@ -121,17 +121,17 @@ def single_img_features(img, color_space='RGB', spatial_size=(32, 32),
 				feature_image = np.stack((feature_image, feature_image, feature_image), axis=2)  # keep shape
 	else: feature_image = np.copy(img)
 	#3) Compute spatial features if flag is set
-	if spatial_feat == True:
+	if spatial_feat is True:
 		spatial_features = bin_spatial(feature_image, size=spatial_size)
 		#4) Append features to list
 		img_features.append(spatial_features)
 	#5) Compute histogram features if flag is set
-	if hist_feat == True:
+	if hist_feat is True:
 		hist_features = color_hist(feature_image, nbins=hist_bins)
 		#6) Append features to list
 		img_features.append(hist_features)
 	#7) Compute HOG features if flag is set
-	if hog_feat == True:
+	if hog_feat is True:
 		if hog_channel == 'ALL':
 			hog_features = []
 			for channel in range(feature_image.shape[2]):
@@ -187,4 +187,3 @@ if __name__ == '__main__':
 	plt.imshow(hog_image, cmap='gray')
 	plt.title('HOG Visualization')
 	plt.show()
-
