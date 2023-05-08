@@ -62,6 +62,7 @@ def object_detection(image, window_size, step, extractor, kmeans, scaler, classi
             detections.append([x, y, class_score, class_idx])
 
     # Perform Non-Maximum Suppression (NMS)
+    #  TODO: Send correct input to non_maximum_suppression function
     # detections = non_maximum_suppression(detections, nms_threshold)
 
     # Draw bounding boxes for the detected objects
@@ -117,6 +118,7 @@ def compute_iou(bbox1, bbox2):
     iou = intersection_area / union_area
     return iou
 
+# TODO: Check if it works correctly
 def non_maximum_suppression(detections, overlap_thresh):
     # if there are no detections, return an empty list
     if len(detections) == 0:
