@@ -15,6 +15,7 @@ Icon
 *.jpg
 *.zip
 
+config.py
 
 # Thumbnails
 ._*
