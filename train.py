@@ -55,3 +55,15 @@ def train(cars, notcars, svc, X_scaler):
 	print(round(t2-t, 2), 'Seconds to train SVC...')
 	# Check the score of the SVC
 	print('Test Accuracy of SVC = ', round(svc.score(X_test, y_test), 4))
+ 
+def train_classifier(X_train, y_train, svc):
+	t=time.time()
+	svc.fit(X_train, y_train)
+	t2 = time.time()
+	print(round(t2-t, 2), 'Seconds to train SVC...')
+	# Check the score of the SVC
+	return svc
+
+def evaluate_classifier(svc, X_test, y_test):
+    return round(svc.score(X_test, y_test), 4)
+    
