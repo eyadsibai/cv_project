@@ -7,7 +7,6 @@ def compute_precision_recall(predictions, ground_truths, iou_threshold):
     fp = 0
     fn = 0
 
-
     for gt in ground_truths:
         matched = False
         for pred in predictions:

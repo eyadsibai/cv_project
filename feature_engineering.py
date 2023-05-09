@@ -58,7 +58,6 @@ def create_histograms2(X, extractor, kmeans):
     return histograms
 
 
-
 def create_histograms(X, extractor, kmeans):
     histograms = []
     for x in tqdm(X):

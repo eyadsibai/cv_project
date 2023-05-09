@@ -16,8 +16,7 @@ def object_detection(
     step,
     extractor,
     kmeans,
-    scaler,
-    classifier,
+    model,
     score_threshold,
     nms_threshold,
 ):
@@ -30,11 +29,8 @@ def object_detection(
         # Create a histogram of visual words
         patch_histogram = create_histograms([patch], extractor, kmeans)[0]
 
-        # Normalize the histogram
-        patch_histogram = scaler.transform([patch_histogram])
-
         # Classify the patch
-        probabilities = classifier.predict_proba(patch_histogram)[0]
+        probabilities = model.predict_proba(patch_histogram)[0]
         class_idx = np.argmax(probabilities)
         class_score = probabilities[class_idx]
 
@@ -43,10 +39,14 @@ def object_detection(
             detections.append([x, y, class_score, class_idx])
 
     # Perform Non-Maximum Suppression (NMS)
-    #  TODO: Send correct input to non_maximum_suppression function
     detections = non_maximum_suppression(
         np.array(detections), nms_threshold, window_size
     )
+
+    return detections
+
+
+def draw_predictions(detections, window_size, image):
 
     # Draw bounding boxes for the detected objects
     for (x, y, score, class_idx) in detections:
@@ -63,7 +63,6 @@ def object_detection(
                 (0, 255, 0),
                 1,
             )
-
     return image
 
 

@@ -13,11 +13,11 @@ from sklearn.model_selection import GroupShuffleSplit
 from feature_engineering import extract_features, create_vocabulary, create_histograms
 from sklearn.pipeline import Pipeline
 from tqdm import tqdm
-from config import GENERATED_IMAGES_PATH, RESOLUTION, model1,DOWNLOAD_PATH
+from config import GENERATED_IMAGES_PATH, RESOLUTION, model1, DOWNLOAD_PATH
 import json
 from metrics import compute_ap, compute_precision_recall
 
-from utils import generate_samples
+from utils import generate_samples, object_detection
 
 
 def remove_duplicates(X, y):
@@ -29,10 +29,13 @@ def remove_duplicates(X, y):
     y = Xy[:, -1]
     return X, y
 
+
 def _get_data_paths():
     return [
         os.path.dirname(path)
-        for path in glob(GENERATED_IMAGES_PATH + "/" +DOWNLOAD_PATH+ "/**/*.npy", recursive=True)
+        for path in glob(
+            GENERATED_IMAGES_PATH + "/" + DOWNLOAD_PATH + "/**/*.npy", recursive=True
+        )
     ]
 
 
@@ -52,24 +55,29 @@ def read_data():
             video = np.load(video_path)
             yield video, labels
 
+
 def pickle1(o, name):
-    with open(name, 'wb') as f:
+    with open(name, "wb") as f:
         pickle.dump(o, f)
 
+
 def unpickle(name):
-    with open(name, 'rb') as f:
+    with open(name, "rb") as f:
         return pickle.load(f)
+
 
 def train_test_split(X, y, test_size, random_state, groupkey):
     X = np.array(X)
     y = np.array(y)
+    groups = np.array(groupkey)
     # assume X is your feature data and y is your target data
     # groupkey is a list or array that identifies the group each sample belongs to
     gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
 
     # Split the data into training and test sets
     train_indices, test_indices = next(gss.split(X, None, groupkey))
-    return X[train_indices], X[test_indices], y[train_indices], y[test_indices]
+    return X[train_indices], y[train_indices], groups[test_indices]
+
 
 def predict_video(video, model):
     predictions = []
@@ -82,6 +90,7 @@ def preprocessing(video, image_enhancement=False):
     if image_enhancement:
         raise NotImplementedError
     return extract_features(video)
+
 
 if __name__ == "__main__":
 
@@ -120,25 +129,22 @@ if __name__ == "__main__":
 
     X, y = zip(*samples)
 
-    print('size of X', len(X))
-    print('size of y', len(y))
+    print("size of X", len(X))
+    print("size of y", len(y))
 
     print("Splitting data...")
-    X_train, X_test, y_train, y_test = train_test_split(
-        X,y, test_size=0.2, random_state=42, groupkey=group_ids
+    X_train, y_train, groupkey_for_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, groupkey=group_ids
     )
-
-    # X_train = unpickle("X_train.pkl")
-    # y_train = unpickle("y_train.pkl")
-    # X_test = unpickle("X_test.pkl")
-    # y_test = unpickle("y_test.pkl")
+    videos_for_test = [
+        vid for i, vid in enumerate(videos) if i in set(groupkey_for_test)
+    ]
+    labels_for_test = [
+        label for i, label in enumerate(labels) if i in set(groupkey_for_test)
+    ]
 
     print("size of X_train", len(X_train))
     print("size of y_train", len(y_train))
-    print("size of X_test", len(X_test))
-    print("size of y_test", len(y_test))
-
-
 
     print("Extracting features...")
     extractor = cv2.SIFT_create()
@@ -155,42 +161,72 @@ if __name__ == "__main__":
     print("vocabulary created")
     # Create histograms of visual words for the training and testing images
     X_train = create_histograms(X_train, extractor, kmeans)
-    X_test = create_histograms(X_test, extractor, kmeans)
+    # X_test = create_histograms(X_test, extractor, kmeans)
 
     print("size of X_train", len(X_train))
-    print("size of X_test", len(X_test))
     print("size of y_train", len(y_train))
-    print("size of y_test", len(y_test))
 
     X_train, y_train = remove_duplicates(X_train, y_train)
-    X_test, y_test = remove_duplicates(X_test, y_test)
 
     print("duplicates removed")
     print("size of X_train", len(X_train))
-    print("size of X_test", len(X_test))
     print("size of y_train", len(y_train))
-    print("size of y_test", len(y_test))
 
-
-    pipeline = Pipeline([
-    ('scaler', StandardScaler()),
-    ('svc', LogisticRegression(class_weight='balanced', random_state=42, max_iter=1000))
-])
+    pipeline = Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            (
+                "logistic_regression",
+                LogisticRegression(
+                    class_weight="balanced", random_state=42, max_iter=1000
+                ),
+            ),
+        ]
+    )
     pipeline = pipeline.fit(X_train, y_train)
 
-    predictions = pipeline.predict_proba(X_test)[:,1]
+    all_predictions = []
+    all_ground_truths = []
 
-    precisions, recalls = compute_precision_recall(predictions, y_test,
-                                                   iou_threshold=0.5)
+    for img, anns in zip(
+        videos_for_test, labels_for_test
+    ):  # Assuming X_test contains test images and y_test contains the corresponding annotations
+        # Get the predicted bounding boxes and class indices for the test image
 
-    import pudb; pudb.set_trace()
+        detections = object_detection(
+            image=img,
+            window_size=model1["window_size"],
+            step=model1["window_step"],
+            extractor=extractor,
+            kmeans=kmeans,
+            model=pipeline,
+            score_threshold=model1["score_threshold"],
+            nms_threshold=model1["iou_threshold"],
+        )
 
-    ap = compute_ap(precisions, recalls)
+        # Store the predictions and ground truth annotations for evaluation
+        all_predictions.extend(detections)
+        all_ground_truths.extend(anns)
 
+    all_precisions = []
+    all_recalls = []
 
-    # Check if the score is above the threshold
-    if class_score > model1['score_threshold']:
-        detections.append([x, y, class_score, class_idx])
+    for class_idx in range(2):
+        precision, recall = compute_precision_recall(
+            all_predictions, all_ground_truths, model1["iou_threshold"], class_idx
+        )
+        all_precisions.append(precision)
+        all_recalls.append(recall)
+
+    aps = []
+
+    for precisions, recalls in zip(all_precisions, all_recalls):
+        ap = compute_ap(precisions, recalls)
+        aps.append(ap)
+
+    mAP = np.mean(aps)
+
+    print(mAP)
 
     # # Evaluate the classifier on the test set histograms
     # acc = evaluate_classifier(classifier, test_histograms_normalized, y_test)
