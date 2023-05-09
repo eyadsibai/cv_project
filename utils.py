@@ -27,7 +27,7 @@ def object_detection(
     for x, y, patch in sliding_window(image, window_size, step):
 
         # Create a histogram of visual words
-        patch_histogram = create_histograms([patch], extractor, kmeans)[0]
+        patch_histogram = create_histograms([patch], extractor, kmeans)[0].reshape(1,-1)
 
         # Classify the patch
         probabilities = model.predict_proba(patch_histogram)[0]
@@ -76,7 +76,8 @@ def generate_samples(video, list_bboxes, window_size, step, iou_threshold):
         for annotation in list_bboxes:
             max_iou = np.maximum(max_iou, compute_iou(patch_bbox, annotation))
 
-        samples.append((patch, int(max_iou >= iou_threshold)))
+        samples.append((patch, int(max_iou >= iou_threshold), patch_bbox))
+
 
     return samples
 

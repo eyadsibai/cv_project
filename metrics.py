@@ -1,11 +1,14 @@
 import numpy as np
 from utils import compute_iou
 
-
-def compute_precision_recall(predictions, ground_truths, iou_threshold):
+def compute_precision_recall(predictions, ground_truths, iou_threshold, class_idx):
     tp = 0
     fp = 0
     fn = 0
+    # Filter predictions and ground_truths by class_idx
+    import pudb; pudb.set_trace()
+    predictions = [pred for pred in predictions if pred[3] == class_idx]
+    ground_truths = [gt for gt in ground_truths if gt[4] == class_idx]
 
     for gt in ground_truths:
         matched = False

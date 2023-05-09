@@ -4,12 +4,12 @@ import numpy as np
 from glob import glob
 
 from sklearn.discriminant_analysis import StandardScaler
-from sklearn.linear_model import LogisticRegression
 
 
 import ast
 import os
 from sklearn.model_selection import GroupShuffleSplit
+from sklearn.svm import SVC
 from feature_engineering import extract_features, create_vocabulary, create_histograms
 from sklearn.pipeline import Pipeline
 from tqdm import tqdm
@@ -66,17 +66,18 @@ def unpickle(name):
         return pickle.load(f)
 
 
-def train_test_split(X, y, test_size, random_state, groupkey):
+def train_test_split(X, y, bboxes, test_size, random_state, groupkey):
     X = np.array(X)
     y = np.array(y)
-    groups = np.array(groupkey)
+    bboxes = np.array(bboxes)
+    groupkey = np.array(groupkey)
     # assume X is your feature data and y is your target data
     # groupkey is a list or array that identifies the group each sample belongs to
     gss = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=random_state)
-
     # Split the data into training and test sets
     train_indices, test_indices = next(gss.split(X, None, groupkey))
-    return X[train_indices], y[train_indices], groups[test_indices]
+
+    return X[train_indices], y[train_indices], X[test_indices], y[test_indices], bboxes[test_indices], set(groupkey[test_indices])
 
 
 def predict_video(video, model):
@@ -100,7 +101,7 @@ if __name__ == "__main__":
     for i, (video, labels_) in enumerate(read_data()):
         videos.append(video)
         labels.append(labels_)
-        if i == 9:
+        if i == 2:
             break
 
     print("size of videos", len(videos))
@@ -124,24 +125,27 @@ if __name__ == "__main__":
             samples.extend(generated_samples)
             group_ids.extend([i] * len(generated_samples))
 
+
     print("size of samples", len(samples))
     print("size of group_ids", len(group_ids))
 
-    X, y = zip(*samples)
+    X, y, bboxes = zip(*samples)
+    bboxes = [x+[y_] for x, y_ in zip(bboxes,y)]
+
+
 
     print("size of X", len(X))
     print("size of y", len(y))
+    print("size of bboxes", len(bboxes))
 
     print("Splitting data...")
-    X_train, y_train, groupkey_for_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, groupkey=group_ids
+    X_train, y_train, X_test, y_test, bboxes_test, test_indices = train_test_split(
+        X, y, bboxes, test_size=0.2, random_state=42, groupkey=group_ids
     )
-    videos_for_test = [
-        vid for i, vid in enumerate(videos) if i in set(groupkey_for_test)
-    ]
-    labels_for_test = [
-        label for i, label in enumerate(labels) if i in set(groupkey_for_test)
-    ]
+
+    videos_test = [videos[i] for i in test_indices]
+    labels_test = [labels[i] for i in test_indices]
+
 
     print("size of X_train", len(X_train))
     print("size of y_train", len(y_train))
@@ -176,9 +180,17 @@ if __name__ == "__main__":
         [
             ("scaler", StandardScaler()),
             (
-                "logistic_regression",
-                LogisticRegression(
-                    class_weight="balanced", random_state=42, max_iter=1000
+                # "logistic_regression",
+                # LogisticRegression(
+                #     class_weight="balanced", random_state=42, max_iter=1000
+                # ),
+
+                "svm",
+                SVC(
+                    class_weight="balanced",
+                    random_state=42,
+                    kernel="linear",
+                    probability=True,
                 ),
             ),
         ]
@@ -188,28 +200,33 @@ if __name__ == "__main__":
     all_predictions = []
     all_ground_truths = []
 
-    for img, anns in zip(
-        videos_for_test, labels_for_test
-    ):  # Assuming X_test contains test images and y_test contains the corresponding annotations
-        # Get the predicted bounding boxes and class indices for the test image
+    for vid, anns in zip(
+        videos_test, labels_test
+    ):  # Assuming X_test contains test images and y_test contains the corresponding
+        # annotations Get the predicted bounding boxes and class indices for the test image
 
-        detections = object_detection(
-            image=img,
-            window_size=model1["window_size"],
-            step=model1["window_step"],
-            extractor=extractor,
-            kmeans=kmeans,
-            model=pipeline,
-            score_threshold=model1["score_threshold"],
-            nms_threshold=model1["iou_threshold"],
-        )
+        for image, ann in zip(vid, anns):
 
-        # Store the predictions and ground truth annotations for evaluation
-        all_predictions.extend(detections)
-        all_ground_truths.extend(anns)
+            detections = object_detection(
+                image=image,
+                window_size=model1["window_size"],
+                step=model1["window_step"],
+                extractor=extractor,
+                kmeans=kmeans,
+                model=pipeline,
+                score_threshold=model1["score_threshold"],
+                nms_threshold=model1["iou_threshold"],
+            )
+
+            # Store the predictions and ground truth annotations for evaluation
+            all_predictions.extend(detections)
+            all_ground_truths.extend([ann])
+
+
 
     all_precisions = []
     all_recalls = []
+
 
     for class_idx in range(2):
         precision, recall = compute_precision_recall(
