@@ -30,7 +30,7 @@ def download_data():
     )
 
 
-def _generate_images_from_video(video_path, bbox_path, step_size=100):
+def _generate_images_from_video(video_path, bbox_path, step_size=10):
     fps = 2
     start = None
     duration = None
@@ -86,7 +86,7 @@ def _save_output(result, directory, f_video):
 
 def prepare_data():
 
-    client = Client(n_workers=4, threads_per_worker=1)
+    client = Client(n_workers=2, threads_per_worker=1)
 
     paths = glob(PATH, recursive=True)
     paths = [os.path.dirname(path) for path in paths]
@@ -117,4 +117,4 @@ def prepare_data():
 
 if __name__ == "__main__":
     # download_data()
-    prepare_data()
+   prepare_data()

@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 
+from feature_engineering import create_histograms
+
 
 def sliding_window(image, window_size, step):
     for y in range(0, image.shape[0] - window_size[1], step):
