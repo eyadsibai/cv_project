@@ -3,10 +3,12 @@
 - main.py
 
 #########
-1- Evaluate model (PR Curve, mAP, Acc)
-2- Create one output (Video)
-3- Train on multiple videos
-4- Sample of input data (challenges section)
+1- Input data pipeline (later)
+2- Send correct input to non_maximum_suppression function (Done)
+3- Evaluate model (PR Curve, mAP, Acc)
+4- Create one output (Video)
+5- Train on multiple videos
+6- Sample of input data (challenges section)
 #########
 
 

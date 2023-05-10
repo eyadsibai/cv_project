@@ -1,4 +1,6 @@
 import time
+import cv2
+from utils import sliding_window, create_histograms, non_maximum_suppression
 
 def train_classifier(X_train, y_train, svc):
 	t=time.time()
@@ -10,4 +12,4 @@ def train_classifier(X_train, y_train, svc):
 
 def evaluate_classifier(svc, X_test, y_test):
     return round(svc.score(X_test, y_test), 4)
-    
+

@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from train import train_classifier, evaluate_classifier
+from train import train_classifier, evaluate_classifier, evaluate_object_detection
 from utils import *
 import ast
 
@@ -63,11 +63,16 @@ if __name__ == '__main__':
     acc = evaluate_classifier(classifier, test_histograms_normalized, y_test)
     print("Test Accuracy of SVC:", acc)
     
+    # results = evaluate_object_detection()
+    
     # Test on one image
+    # TODO: Create function for displaying annotation
     input_image = video[4]
+    ##
+    input2_image = input_image.copy()
     score_threshold = 0.9
     nms_threshold = 0.7
-    output_image = object_detection(input_image, window_size, step, 
+    output_image = object_detection(input2_image, window_size, step, 
                              extractor, kmeans, scaler, 
                              classifier, score_threshold, 
                              nms_threshold)

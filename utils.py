@@ -62,12 +62,12 @@ def object_detection(image, window_size, step, extractor, kmeans, scaler, classi
             detections.append([x, y, class_score, class_idx])
 
     # Perform Non-Maximum Suppression (NMS)
-    #  TODO: Send correct input to non_maximum_suppression function
-    # detections = non_maximum_suppression(detections, nms_threshold)
+    detections = non_maximum_suppression(detections, nms_threshold, window_size)
 
     # Draw bounding boxes for the detected objects
     for (x, y, score, class_idx) in detections:
         if class_idx == 1:
+            x, y = int(x), int(y)
             image = cv2.rectangle(image, (x, y), (x + window_size[0], y + window_size[1]), (0, 255, 0), 2)
             image = cv2.putText(image, f"Class: {class_idx}, Score: {score:.2f}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
@@ -119,53 +119,36 @@ def compute_iou(bbox1, bbox2):
     return iou
 
 # TODO: Check if it works correctly
-def non_maximum_suppression(detections, overlap_thresh):
-    # if there are no detections, return an empty list
+def non_maximum_suppression(detections, iou_threshold, window_size):
     if len(detections) == 0:
         return []
-    
-    # initialize the list of picked indices
-    pick = []
 
-    # grab the coordinates of the bounding boxes
-    x1 = detections[:, 0]
-    y1 = detections[:, 1]
-    x2 = detections[:, 2]
-    y2 = detections[:, 3]
+    # Convert bounding boxes format to (x1, y1, x2, y2)
+    detections = np.array(detections)
+    boxes = np.array(
+        [(x, y, x + window_size[0], y + window_size[1]) for (x, y) in detections[:, :2]]
+    )
+    scores = detections[:, 2]
 
-    # compute the area of the bounding boxes and sort the bounding
-    # boxes by the bottom-right y-coordinate of the bounding box
-    area = (x2 - x1 + 1) * (y2 - y1 + 1)
-    idxs = np.argsort(y2)
+    # Sort the detections by their scores
+    idxs = np.argsort(scores)
 
-    # keep looping while some indices still remain in the indexes
-    # list
+    # Initialize the list of picked indexes
+    picked = []
+
     while len(idxs) > 0:
-        # grab the last index in the indexes list and add the
-        # index value to the list of picked indexes
+        # Grab the last index in the idxs list and add the index value to the list of picked indexes
         last = len(idxs) - 1
         i = idxs[last]
-        pick.append(i)
+        picked.append(i)
 
-        # find the largest (x, y) coordinates for the start of
-        # the bounding box and the smallest (x, y) coordinates
-        # for the end of the bounding box
-        xx1 = np.maximum(x1[i], x1[idxs[:last]])
-        yy1 = np.maximum(y1[i], y1[idxs[:last]])
-        xx2 = np.minimum(x2[i], x2[idxs[:last]])
-        yy2 = np.minimum(y2[i], y2[idxs[:last]])
+        # Compute the IoU between the picked box and the remaining boxes
+        iou = np.array([compute_iou(boxes[i], boxes[j]) for j in idxs[:last]])
 
-        # compute the width and height of the bounding box
-        w = np.maximum(0, xx2 - xx1 + 1)
-        h = np.maximum(0, yy2 - yy1 + 1)
+        # Find the indexes of all boxes with an IoU less than the threshold
+        to_remove = np.where(iou >= iou_threshold)[0]
 
-        # compute the ratio of overlap between the bounding box
-        # and the other bounding boxes
-        overlap = (w * h) / area[idxs[:last]]
+        # Remove the overlapping boxes
+        idxs = np.delete(idxs, np.concatenate(([last], to_remove)))
 
-        # delete all indexes from the index list that have
-        idxs = np.delete(idxs, np.concatenate(([last],
-            np.where(overlap > overlap_thresh)[0])))
-
-    # return only the bounding boxes that were picked
-    return detections[pick]
+    return detections[picked]
