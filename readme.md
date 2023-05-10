@@ -2,6 +2,13 @@
 - converter.py
 - main.py
 
+#########
+1- Evaluate model (PR Curve, mAP, Acc)
+2- Create one output (Video)
+3- Train on multiple videos
+4- Sample of input data (challenges section)
+#########
+
 
 
 # Steps for image enhancement and post-processing

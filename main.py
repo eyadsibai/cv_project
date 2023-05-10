@@ -64,13 +64,13 @@ if __name__ == '__main__':
     print("Test Accuracy of SVC:", acc)
     
     # Test on one image
-    image = video[4]
+    input_image = video[4]
     score_threshold = 0.9
     nms_threshold = 0.7
-    image = object_detection(image, window_size, step, 
+    output_image = object_detection(input_image, window_size, step, 
                              extractor, kmeans, scaler, 
                              classifier, score_threshold, 
                              nms_threshold)
-    
-    cv2.imwrite('output/detection_example.jpg', image)
+    cv2.imwrite('output/input_example.jpg', input_image)
+    cv2.imwrite('output/output_example.jpg', output_image)
 
