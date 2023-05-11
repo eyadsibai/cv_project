@@ -3,13 +3,23 @@
 - main.py
 
 #########
-1- Input data pipeline (later)
+
+Quick TODO list:
+
+1- Input data pipeline (Done)
+
 2- Send correct input to non_maximum_suppression function (Done)
+
 3- Evaluate model (PR Curve, mAP, Acc) (Partially Done)
+
 4- Train on multiple videos (Done)
+
 X- Multiple window sizes?
-5- Create one output (Video)
+
+5- Create one output (Video) (Canceled)
+
 6- Sample of input data (challenges section)
+
 #########
 
 
