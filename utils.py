@@ -74,7 +74,7 @@ def object_detection(image, window_size, step, extractor, kmeans, scaler, classi
         if class_idx == 1:
             x, y = int(x), int(y)
             image = cv2.rectangle(image, (x, y), (x + window_size[0], y + window_size[1]), (0, 255, 0), 1)
-            # image = cv2.putText(image, f"Class: {class_idx}, Score: {score:.2f}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            image = cv2.putText(image, f"Class: {class_idx}, Score: {score:.2f}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
     return image
 
@@ -182,3 +182,19 @@ def read_data():
             labels = read_labels(label_path)
             video = np.load(video_path)
             yield video, labels
+            
+def remove_duplicates(X, y):
+    X = np.array(X)
+    y = np.array(y)
+    Xy = np.hstack((X, y.reshape(-1, 1)))
+    Xy = np.unique(Xy, axis=0)
+    X = Xy[:, :-1]
+    y = Xy[:, -1]
+    return X, y
+
+def plot_boxes(img, cords):
+    
+    for (x1, y1, x2, y2) in cords:
+        img = cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), 1)
+        # img = cv2.putText(img, f"Class: Player", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+    return img

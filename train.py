@@ -21,6 +21,7 @@ def evaluate_classifier(svc, X_test, y_test):
     '''
     return round(svc.score(X_test, y_test), 4)
 
+# Deprecated
 def evaluate_object_detection(image, annotations,
                               window_size, step, 
                               extractor, kmeans, scaler, 

@@ -22,7 +22,11 @@ X- Multiple window sizes?
 
 #########
 
-
+1- remove dubs (Done)
+2- class weight (Done)
+3- cm (Done)
+4- pr for svm (Done)
+5- plot for truth (Done)
 
 # Steps for image enhancement and post-processing
 Preprocessing: Start by preprocessing the soccer-net data, converting it into grayscale, and then applying Gaussian blur to remove any noise in the image.
