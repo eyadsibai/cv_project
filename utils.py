@@ -3,6 +3,11 @@ import numpy as np
 from sklearn.cluster import KMeans
 import json
 import random
+import tqdm
+import os
+import ast
+from glob import glob
+
 
 def sliding_window(image, window_size, step):
     for y in range(0, image.shape[0] - window_size[1], step):
@@ -24,7 +29,7 @@ def create_histograms(images, extractor, kmeans):
     return histograms
 
 def create_vocabulary(features, num_clusters):
-    kmeans = KMeans(n_clusters=num_clusters)
+    kmeans = KMeans(n_clusters=num_clusters, n_init='auto')
     kmeans.fit(features)
     return kmeans
 
@@ -68,8 +73,8 @@ def object_detection(image, window_size, step, extractor, kmeans, scaler, classi
     for (x, y, score, class_idx) in detections:
         if class_idx == 1:
             x, y = int(x), int(y)
-            image = cv2.rectangle(image, (x, y), (x + window_size[0], y + window_size[1]), (0, 255, 0), 2)
-            image = cv2.putText(image, f"Class: {class_idx}, Score: {score:.2f}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+            image = cv2.rectangle(image, (x, y), (x + window_size[0], y + window_size[1]), (0, 255, 0), 1)
+            # image = cv2.putText(image, f"Class: {class_idx}, Score: {score:.2f}", (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
 
     return image
 
@@ -152,3 +157,28 @@ def non_maximum_suppression(detections, iou_threshold, window_size):
         idxs = np.delete(idxs, np.concatenate(([last], to_remove)))
 
     return detections[picked]
+
+def _get_data_paths():
+    return [
+        os.path.dirname(path)
+        for path in glob(
+             "output/**/*.npy", recursive=True
+        )
+    ]
+
+
+def read_labels(path):
+    with open(path, "r") as f:
+        return ast.literal_eval(json.loads(f.read()))["bboxes"]
+
+
+def read_data():
+    paths = _get_data_paths()
+
+    for path in paths:
+        for i in [1, 2]:
+            label_path = os.path.join(path, f"{i}_224p.mkv_bbox.json")
+            video_path = os.path.join(path, f"{i}_224p.mkv.npy")
+            labels = read_labels(label_path)
+            video = np.load(video_path)
+            yield video, labels
